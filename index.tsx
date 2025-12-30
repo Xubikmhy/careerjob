@@ -116,11 +116,13 @@ interface Candidate {
 interface Vacancy {
   id: string;
   companyName: string;
-  address: string;
+  contactPerson: string;
   phone: string;
+  address: string;
   role: string;
   count: number;
   timing: string;
+  requiredSkills: string;
   salary: string;
   remarks: string;
   status: VacancyStatus;
@@ -208,23 +210,27 @@ const transformers = {
     fromDB: (data: any): Vacancy => ({
       id: data.id,
       companyName: data.company_name,
+      contactPerson: data.contact_person || '',
+      phone: data.phone_number || data.phone || '', // Handle both potential field names
       address: data.address,
-      phone: data.phone,
       role: data.role,
-      count: data.count,
-      timing: data.timing,
+      count: data.count || data.candidates_needed || 1,
+      timing: data.timing || '',
+      requiredSkills: data.required_skills || '',
       salary: data.salary,
       remarks: data.remarks,
-      status: data.status,
+      status: data.status || (data.is_open ? 'OPEN' : 'FILLED'),
       createdAt: data.created_at
     }),
     toDB: (data: Partial<Vacancy>) => ({
       company_name: data.companyName,
+      contact_person: data.contactPerson,
+      phone_number: data.phone,
       address: data.address,
-      phone: data.phone,
       role: data.role,
       count: data.count,
       timing: data.timing,
+      required_skills: data.requiredSkills,
       salary: data.salary,
       remarks: data.remarks,
       status: data.status
@@ -416,6 +422,7 @@ const App = () => {
 
   // UX State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month'>('month');
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => setToast({ message, type });
@@ -487,6 +494,32 @@ const App = () => {
       return p.paymentStatus === 'PENDING' && (dueDate <= nextWeek);
     }).sort((a, b) => new Date(a.commissionDueDate).getTime() - new Date(b.commissionDueDate).getTime());
   }, [placements]);
+
+  const dashboardStats = useMemo(() => {
+    const filterByTime = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      if (timeFilter === 'today') return date >= startOfToday;
+      if (timeFilter === 'week') {
+        const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return date >= lastWeek;
+      }
+      if (timeFilter === 'month') {
+        const lastMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return date >= lastMonth;
+      }
+      return true;
+    };
+
+    return {
+      newCandidates: candidates.filter(c => filterByTime(c.createdAt)).length,
+      newVacancies: vacancies.filter(v => filterByTime(v.createdAt)).length,
+      placementsCount: placements.filter(p => filterByTime(p.joiningDate)).length,
+      revenue: placements.filter(p => filterByTime(p.joiningDate)).reduce((acc, p) => acc + p.commissionAmount, 0)
+    };
+  }, [candidates, vacancies, placements, timeFilter]);
 
   // --- Effects ---
 
@@ -585,11 +618,13 @@ const App = () => {
     const formData = new FormData(e.target as HTMLFormElement);
     const rawVacancy = {
       companyName: formData.get('companyName') as string,
-      address: formData.get('address') as string,
+      contactPerson: formData.get('contactPerson') as string,
       phone: formData.get('phone') as string,
+      address: formData.get('address') as string,
       role: formData.get('role') as string,
       count: parseInt(formData.get('count') as string) || 1,
       timing: formData.get('timing') as string,
+      requiredSkills: formData.get('requiredSkills') as string,
       salary: formData.get('salary') as string,
       remarks: formData.get('remarks') as string,
       status: 'OPEN' as VacancyStatus
@@ -761,7 +796,7 @@ const App = () => {
     setIsAiGenerating(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `Professional CV Structure for: ${JSON.stringify(cvForm)}. Return valid JSON matching schema: { "summary": "", "experiences": [], "skills": "" }`;
+      const prompt = `Professional CV Structure for: ${JSON.stringify(cvForm)}. Return valid JSON matching schema: { "summary": "", "experiences": [{"company": "", "role": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "isCurrent": false, "responsibilities": ""}], "skills": "" }`;
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview", contents: prompt, config: { responseMimeType: "application/json" }
       });
@@ -860,35 +895,241 @@ const App = () => {
 
   // Reuse previous render logic with updated state hooks...
 
-  const renderDashboard = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-blue-100 rounded-full text-blue-600"><Users size={24} /></div>
-          <div><div className="text-sm text-slate-500">Total Candidates</div><div className="text-2xl font-bold">{candidates.length}</div></div>
-        </Card>
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-orange-100 rounded-full text-orange-600"><ClipboardList size={24} /></div>
-          <div><div className="text-sm text-slate-500">Open Vacancies</div><div className="text-2xl font-bold">{vacancies.filter(v => v.status === 'OPEN').length}</div></div>
-        </Card>
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-yellow-100 rounded-full text-yellow-600"><DollarSign size={24} /></div>
-          <div><div className="text-sm text-slate-500">Pending Commission</div><div className="text-2xl font-bold">NPR {placements.filter(p => p.paymentStatus === 'PENDING').reduce((acc, p) => acc + p.commissionAmount, 0).toLocaleString()}</div></div>
-        </Card>
+  const renderDashboard = () => {
+    // Advanced Calculations
+    const totalRevenue = placements
+      .filter(p => p.paymentStatus === 'PAID')
+      .reduce((acc, p) => acc + p.commissionAmount, 0);
+
+    const pendingRevenue = placements
+      .filter(p => p.paymentStatus === 'PENDING')
+      .reduce((acc, p) => acc + p.commissionAmount, 0);
+
+    const placementSuccessRate = candidates.length > 0
+      ? Math.round((candidates.filter(c => c.status === 'PLACED').length / candidates.length) * 100)
+      : 0;
+
+    const recentActivity = [
+      ...candidates.slice(0, 3).map(c => ({ type: 'candidate', title: `New Candidate: ${c.fullName}`, date: c.createdAt })),
+      ...placements.slice(0, 3).map(p => ({ type: 'placement', title: `Placement: ${getCandidateName(p.candidateId)} at ${p.companyName}`, date: p.joiningDate })),
+      ...vacancies.slice(0, 3).map(v => ({ type: 'vacancy', title: `New Vacancy: ${v.role} at ${v.companyName}`, date: v.createdAt }))
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
+    return (
+      <div className="space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
+            <p className="text-sm text-slate-500">Welcome back! Here's what's happening today.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => fetchData()}><RefreshCw size={16} /> Refresh</Button>
+            <Button onClick={() => setIsCandidateModalOpen(true)}><Plus size={16} /> Quick Add</Button>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-500 text-white rounded-xl shadow-sm"><Users size={24} /></div>
+              <div>
+                <div className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Total Talent</div>
+                <div className="text-2xl font-bold text-slate-900">{candidates.length}</div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+              <span className="text-green-600 font-bold">{placementSuccessRate}%</span> placement rate
+            </div>
+          </Card>
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-white border-orange-100">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-orange-500 text-white rounded-xl shadow-sm"><Briefcase size={24} /></div>
+              <div>
+                <div className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Open Roles</div>
+                <div className="text-2xl font-bold text-slate-900">{vacancies.filter(v => v.status === 'OPEN').length}</div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+              Across <span className="font-bold">{new Set(vacancies.map(v => v.companyName)).size}</span> companies
+            </div>
+          </Card>
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-white border-green-100">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-500 text-white rounded-xl shadow-sm"><DollarSign size={24} /></div>
+              <div>
+                <div className="text-xs font-semibold text-green-600 uppercase tracking-wider">Total Revenue</div>
+                <div className="text-2xl font-bold text-slate-900">NPR {totalRevenue.toLocaleString()}</div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+              From <span className="font-bold">{placements.filter(p => p.paymentStatus === 'PAID').length}</span> collections
+            </div>
+          </Card>
+          <Card className="p-4 bg-gradient-to-br from-yellow-50 to-white border-yellow-100">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-yellow-500 text-white rounded-xl shadow-sm"><Clock size={24} /></div>
+              <div>
+                <div className="text-xs font-semibold text-yellow-600 uppercase tracking-wider">Pending</div>
+                <div className="text-2xl font-bold text-slate-900">NPR {pendingRevenue.toLocaleString()}</div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+              <span className="text-yellow-600 font-bold">{upcomingCommissions.length}</span> reaching due date soon
+            </div>
+          </Card>
+        </div>
+
+        {/* Quick Actions & Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8 space-y-6">
+            {/* Performance Visualization Section */}
+            <Card className="p-6 overflow-hidden">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Performance Insights</h3>
+                <div className="flex bg-slate-100 p-1 rounded-lg">
+                  {(['today', 'week', 'month'] as const).map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setTimeFilter(f)}
+                      className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${timeFilter === f ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      {f === 'today' ? 'Today' : f === 'week' ? 'Weekly' : 'Monthly'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-6">
+                  {[
+                    { label: 'Talent Acquisition', value: dashboardStats.newCandidates, total: candidates.length, color: 'blue' },
+                    { label: 'Market Demand', value: dashboardStats.newVacancies, total: vacancies.length, color: 'orange' },
+                    { label: 'Success Closures', value: dashboardStats.placementsCount, total: placements.length, color: 'green' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="space-y-2">
+                      <div className="flex justify-between text-xs font-semibold uppercase tracking-tight text-slate-500">
+                        <span>{item.label}</span>
+                        <span className={`text-${item.color}-600`}>{item.value} / {item.total}</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full bg-${item.color}-500 transition-all duration-1000 ease-out`}
+                          style={{ width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col items-center justify-center p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden group">
+                  <div className="absolute top-[-20px] right-[-20px] p-10 bg-blue-200/20 rounded-full group-hover:scale-110 transition-transform duration-500" />
+                  <div className="relative z-10 text-center">
+                    <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Period Revenue</div>
+                    <div className="text-3xl font-black text-blue-900 mb-2">NPR {dashboardStats.revenue.toLocaleString()}</div>
+                    <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-blue-600 bg-white px-3 py-1 rounded-full shadow-sm">
+                      <Sparkles size={12} />
+                      Target Optimized
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="p-6 flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2"><Briefcase className="text-blue-500" size={20} /> Latest Vacancies</h3>
+                  <Button variant="secondary" className="text-xs h-8" onClick={() => setActiveView('vacancies')}>View All</Button>
+                </div>
+                <div className="space-y-3 flex-1">
+                  {vacancies.slice(0, 5).map(v => (
+                    <div key={v.id} className="p-3 bg-slate-50 border border-slate-100 rounded-lg flex justify-between items-center hover:bg-slate-100/50 transition-colors">
+                      <div>
+                        <div className="font-bold text-sm">{v.role}</div>
+                        <div className="text-[10px] text-slate-400 uppercase tracking-tighter">{v.companyName}</div>
+                      </div>
+                      <Badge color={v.status === 'OPEN' ? 'green' : 'gray'}>{v.status}</Badge>
+                    </div>
+                  ))}
+                  {vacancies.length === 0 && <div className="text-center py-8 text-slate-400 text-sm">No vacancies posted yet</div>}
+                </div>
+              </Card>
+
+              <Card className="p-6 flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2"><AlertCircle className="text-yellow-500" size={20} /> Due Payments</h3>
+                  <Button variant="secondary" className="text-xs h-8" onClick={() => setActiveView('placements')}>History</Button>
+                </div>
+                <div className="overflow-x-auto flex-1">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase border-b font-bold tracking-wider">
+                      <tr><th className="py-2 px-3">Company</th><th className="py-2 px-3 text-right">Amount</th><th className="py-2 px-3 text-right">Due Date</th></tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {upcomingCommissions.slice(0, 5).map(p => (
+                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3 px-3">
+                            <div className="font-semibold text-slate-700">{p.companyName}</div>
+                            <div className="text-[10px] text-slate-400">{getCandidateName(p.candidateId)}</div>
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono text-slate-600">NPR {p.commissionAmount.toLocaleString()}</td>
+                          <td className="py-3 px-3 text-right text-xs">
+                            <span className={new Date(p.commissionDueDate) < new Date() ? 'text-red-500 font-bold' : 'text-slate-500'}>
+                              {new Date(p.commissionDueDate).toLocaleDateString()}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {upcomingCommissions.length === 0 && (
+                        <tr><td colSpan={3} className="text-center py-8 text-slate-400 text-sm">No pending payments</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          <aside className="lg:col-span-4">
+            <Card className="p-6 h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900 border-b pb-4">
+                <Sparkles className="text-indigo-500" size={20} /> Recent Activity
+              </h3>
+              <div className="relative flex-1">
+                <div className="absolute left-[11px] top-0 bottom-0 w-[2px] bg-slate-100"></div>
+                <div className="space-y-6 relative">
+                  {recentActivity.map((activity, idx) => (
+                    <div key={idx} className="flex gap-4 relative">
+                      <div className={`z-10 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm shrink-0 ${activity.type === 'candidate' ? 'bg-blue-500' :
+                        activity.type === 'placement' ? 'bg-green-500' : 'bg-orange-500'
+                        }`}>
+                        {activity.type === 'candidate' ? <Users size={12} className="text-white" /> :
+                          activity.type === 'placement' ? <CheckCircle2 size={12} className="text-white" /> : <Briefcase size={12} className="text-white" />}
+                      </div>
+                      <div className="flex-1 -mt-0.5">
+                        <div className="text-sm font-medium text-slate-800 leading-tight">{activity.title}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1 font-mono uppercase">
+                          <Clock size={10} /> {new Date(activity.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {recentActivity.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-slate-300">
+                      <LayoutDashboard size={40} className="mb-4 opacity-20" />
+                      <span className="text-sm">No activity recorded</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </aside>
+        </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><AlertCircle className="text-yellow-500" size={20} /> Upcoming Commissions</h3>
-          <div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 border-b"><tr><th className="py-2 px-3">Company</th><th className="py-2 px-3">Amount</th><th className="py-2 px-3">Due</th></tr></thead>
-            <tbody className="divide-y">{upcomingCommissions.map(p => (<tr key={p.id}><td className="py-2 px-3">{p.companyName}</td><td className="py-2 px-3">NPR {p.commissionAmount}</td><td className="py-2 px-3">{new Date(p.commissionDueDate).toLocaleDateString()}</td></tr>))}</tbody></table></div>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Latest Vacancies</h3>
-          <div className="space-y-3">{vacancies.slice(0, 5).map(v => (<div key={v.id} className="p-3 bg-slate-50 border rounded flex justify-between"><div><div className="font-bold">{v.role}</div><div className="text-xs">{v.companyName}</div></div><Badge color={v.status === 'OPEN' ? 'green' : 'gray'}>{v.status}</Badge></div>))}</div>
-        </Card>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderCandidates = () => (
     <div className="space-y-6">
@@ -898,7 +1139,7 @@ const App = () => {
           <td className="p-4 whitespace-nowrap"><Button variant="secondary" className="text-xs py-1" onClick={() => { setStudioCandidateId(c.id); setShowPreview(false); setActiveView('cv_studio'); }}>Edit CV</Button></td></tr>))}</tbody></table></div></Card>
       {isCandidateModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl p-6">
+          <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Add New Candidate</h3>
             <form onSubmit={handleAddCandidate}>
               <div className="grid grid-cols-2 gap-4"><Input name="fullName" label="Name" required /><Input name="mobile" label="Mobile" required /></div>
@@ -922,7 +1163,35 @@ const App = () => {
         <Card key={v.id} className="flex flex-col"><div className="p-5 flex-1"><h3 className="font-bold">{v.role}</h3><div className="text-sm text-blue-600 mb-2">{v.companyName}</div><div className="text-xs text-slate-500 space-y-1"><div>Salary: {v.salary}</div><div>Count: {v.count}</div></div></div>
           <div className="p-4 bg-slate-50 border-t flex gap-2"><Button className="flex-1 text-xs" onClick={() => setMatchingVacancyId(v.id)} disabled={v.status !== 'OPEN'}>Match</Button><Button variant="secondary" className="text-xs" onClick={() => toggleVacancyStatus(v.id)}>{v.status}</Button></div></Card>
       ))}</div>
-      {isVacancyModalOpen && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"><Card className="w-full max-w-lg p-6"><h3 className="text-xl font-bold mb-4">New Vacancy</h3><form onSubmit={handleAddVacancy}><Input name="companyName" label="Company" required /><Input name="role" label="Role" required /><Input name="salary" label="Salary" /><div className="flex justify-end gap-2 mt-4"><Button type="button" variant="secondary" onClick={() => setIsVacancyModalOpen(false)}>Cancel</Button><Button type="submit" isLoading={isSubmitting}>Post</Button></div></form></Card></div>)}
+      {isVacancyModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4">New Vacancy</h3>
+            <form onSubmit={handleAddVacancy}>
+              <div className="grid grid-cols-2 gap-4">
+                <Input name="companyName" label="Company" required />
+                <Input name="contactPerson" label="Contact Person" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input name="phone" label="Phone" />
+                <Input name="address" label="Address" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input name="role" label="Role" required />
+                <Input name="count" label="Count" type="number" defaultValue={1} />
+              </div>
+              <Input name="timing" label="Timing" placeholder="e.g. Full-time, 9am-5pm" />
+              <TextArea name="requiredSkills" label="Required Skills" placeholder="List key skills..." />
+              <Input name="salary" label="Salary" />
+              <TextArea name="remarks" label="Remarks" />
+              <div className="flex justify-end gap-2 mt-4">
+                <Button type="button" variant="secondary" onClick={() => setIsVacancyModalOpen(false)}>Cancel</Button>
+                <Button type="submit" isLoading={isSubmitting}>Post</Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
       {matchingVacancyId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-4xl p-4 max-h-[90vh] overflow-y-auto">
@@ -977,7 +1246,21 @@ const App = () => {
               <div className="relative z-10">
                 <div className="border-b-2 border-blue-900 pb-4 mb-6"><h1 className="text-3xl font-bold text-blue-900 uppercase">{cvForm.fullName}</h1><div className="text-sm">{cvForm.address} | {cvForm.mobile} | {cvForm.email}</div></div>
                 {cvForm.summary && <div className="mb-6"><h2 className="font-bold text-blue-900 border-b mb-2">SUMMARY</h2><p className="text-justify">{cvForm.summary}</p></div>}
-                {cvForm.experiences.length > 0 && <div className="mb-6"><h2 className="font-bold text-blue-900 border-b mb-2">EXPERIENCE</h2>{cvForm.experiences.map(e => (<div key={e.id} className="mb-2"><div className="font-bold">{e.role} <span className="font-normal italic">- {e.company}</span></div><div className="text-xs">{e.startDate} - {e.endDate}</div><p className="text-sm">{e.responsibilities}</p></div>))}</div>}
+                {cvForm.experiences.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="font-bold text-blue-900 border-b mb-2 uppercase tracking-wide">EXPERIENCE</h2>
+                    {cvForm.experiences.map(e => (
+                      <div key={e.id} className="mb-4">
+                        <div className="flex justify-between items-baseline mb-1">
+                          <div className="font-bold text-slate-900">{e.role}</div>
+                          <div className="text-xs text-slate-600 font-semibold">{e.startDate} — {e.isCurrent ? 'Present' : e.endDate}</div>
+                        </div>
+                        <div className="text-sm italic text-slate-700 mb-1">{e.company}</div>
+                        <p className="text-sm leading-relaxed text-slate-800">{e.responsibilities}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {sortedEducation.length > 0 && <div className="mb-6"><h2 className="font-bold text-blue-900 border-b mb-2">EDUCATION</h2>{sortedEducation.map(e => (<div key={e.id} className="flex justify-between text-sm"><div><span className="font-bold">{e.degree}</span> ({e.level})</div><div>{e.board}, {e.year}</div></div>))}</div>}
                 {cvForm.skills && <div className="mb-6"><h2 className="font-bold text-blue-900 border-b mb-2">SKILLS</h2><p>{cvForm.skills}</p></div>}
               </div>
@@ -1001,7 +1284,36 @@ const App = () => {
             <div className="grid grid-cols-2 gap-4 mb-4"><Input label="Email" value={cvForm.email || ''} onChange={(e: any) => setCvForm({ ...cvForm, email: e.target.value })} /><Input label="LinkedIn" value={cvForm.linkedin || ''} onChange={(e: any) => setCvForm({ ...cvForm, linkedin: e.target.value })} /></div>
             <TextArea label="Summary" value={cvForm.summary} onChange={(e: any) => setCvForm({ ...cvForm, summary: e.target.value })} />
             <div className="mb-4 font-bold border-b">Experience <Button className="inline text-xs" variant="secondary" onClick={addExperience}>+</Button></div>
-            {cvForm.experiences.map(e => (<div key={e.id} className="p-4 border rounded mb-2"><div className="grid grid-cols-2 gap-2"><Input value={e.company} onChange={(ev: any) => updateExperience(e.id, 'company', ev.target.value)} placeholder="Company" /><Input value={e.role} onChange={(ev: any) => updateExperience(e.id, 'role', ev.target.value)} placeholder="Role" /></div><TextArea value={e.responsibilities} onChange={(ev: any) => updateExperience(e.id, 'responsibilities', ev.target.value)} placeholder="Responsibilities" /><Button variant="danger" className="text-xs" onClick={() => removeExperience(e.id)}>Remove</Button></div>))}
+            {cvForm.experiences.map(e => (
+              <div key={e.id} className="p-4 border rounded mb-2 relative">
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <Input value={e.company} onChange={(ev: any) => updateExperience(e.id, 'company', ev.target.value)} placeholder="Company" />
+                  <Input value={e.role} onChange={(ev: any) => updateExperience(e.id, 'role', ev.target.value)} placeholder="Role" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-2">
+                  <Input type="month" label="Start Date" value={e.startDate} onChange={(ev: any) => updateExperience(e.id, 'startDate', ev.target.value)} />
+                  <div className="flex flex-col">
+                    <Input
+                      type="month"
+                      label="End Date"
+                      value={e.isCurrent ? '' : e.endDate}
+                      disabled={e.isCurrent}
+                      onChange={(ev: any) => updateExperience(e.id, 'endDate', ev.target.value)}
+                    />
+                    <label className="flex items-center gap-2 text-xs text-slate-500 mt-[-10px]">
+                      <input
+                        type="checkbox"
+                        checked={e.isCurrent}
+                        onChange={(ev) => updateExperience(e.id, 'isCurrent', ev.target.checked)}
+                      />
+                      Currently Working Here
+                    </label>
+                  </div>
+                </div>
+                <TextArea value={e.responsibilities} onChange={(ev: any) => updateExperience(e.id, 'responsibilities', ev.target.value)} placeholder="Responsibilities" />
+                <Button variant="danger" className="text-xs mt-2" onClick={() => removeExperience(e.id)}>Remove</Button>
+              </div>
+            ))}
             <div className="mb-4 mt-6 font-bold border-b">Education <Button className="inline text-xs" variant="secondary" onClick={addEducation}>+</Button></div>
             {cvForm.educations.map(e => (<div key={e.id} className="p-4 border rounded mb-2"><div className="grid grid-cols-3 gap-2"><Input value={e.degree} onChange={(ev: any) => updateEducation(e.id, 'degree', ev.target.value)} placeholder="Degree" /><Input value={e.board} onChange={(ev: any) => updateEducation(e.id, 'board', ev.target.value)} placeholder="Board" /><Input value={e.year} onChange={(ev: any) => updateEducation(e.id, 'year', ev.target.value)} placeholder="Year" /></div><Button variant="danger" className="text-xs mt-2" onClick={() => removeEducation(e.id)}>Remove</Button></div>))}
             <TextArea label="Skills" value={cvForm.skills} onChange={(e: any) => setCvForm({ ...cvForm, skills: e.target.value })} className="mt-6" />
