@@ -777,10 +777,10 @@ const App = () => {
     if (!candidate) return;
     setGeneratingId(candidateId);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY || "" });
       const prompt = `Rewrite candidate profile. Name: ${candidate.fullName}, Skills: ${candidate.skills}. JSON Output: { "headline": "", "summary": "", "skills": "" }`;
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", contents: prompt, config: { responseMimeType: "application/json" }
+        model: "gemini-1.5-flash", contents: prompt, config: { responseMimeType: "application/json" }
       });
       if (response.text) {
         const enhanced = JSON.parse(response.text);
@@ -795,10 +795,10 @@ const App = () => {
   const generateCVContentWithAI = async () => {
     setIsAiGenerating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY || "" });
       const prompt = `Professional CV Structure for: ${JSON.stringify(cvForm)}. Return valid JSON matching schema: { "summary": "", "experiences": [{"company": "", "role": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "isCurrent": false, "responsibilities": ""}], "skills": "" }`;
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", contents: prompt, config: { responseMimeType: "application/json" }
+        model: "gemini-1.5-flash", contents: prompt, config: { responseMimeType: "application/json" }
       });
       if (response.text) {
         const res = JSON.parse(response.text);
@@ -1137,22 +1137,6 @@ const App = () => {
       <Card><div className="overflow-x-auto w-full"><table className="w-full text-sm text-left min-w-[600px]"><thead className="bg-slate-50 border-b"><tr><th className="p-4">Name</th><th className="p-4">Mobile</th><th className="p-4">Skills</th><th className="p-4">Fee</th><th className="p-4">Action</th></tr></thead>
         <tbody className="divide-y">{candidates.map(c => (<tr key={c.id}><td className="p-4 font-medium">{c.fullName}</td><td className="p-4 text-slate-600">{c.mobile}</td><td className="p-4 max-w-xs truncate text-slate-600">{c.skills}</td><td className="p-4"><Badge color={c.isRegFeePaid ? 'green' : 'red'}>{c.isRegFeePaid ? 'Paid' : 'Unpaid'}</Badge></td>
           <td className="p-4 whitespace-nowrap"><Button variant="secondary" className="text-xs py-1" onClick={() => { setStudioCandidateId(c.id); setShowPreview(false); setActiveView('cv_studio'); }}>Edit CV</Button></td></tr>))}</tbody></table></div></Card>
-      {isCandidateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">Add New Candidate</h3>
-            <form onSubmit={handleAddCandidate}>
-              <div className="grid grid-cols-2 gap-4"><Input name="fullName" label="Name" required /><Input name="mobile" label="Mobile" required /></div>
-              <Input name="address" label="Address" required />
-              <TextArea name="skills" label="Skills" required />
-              <TextArea name="experience" label="Experience" required />
-              <TextArea name="education" label="Education" required />
-              <div className="mb-4"><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isRegFeePaid" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" /> Reg Fee Paid?</label></div>
-              <div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button><Button type="submit" isLoading={isSubmitting}>Save</Button></div>
-            </form>
-          </Card>
-        </div>
-      )}
     </div>
   );
 
@@ -1163,43 +1147,6 @@ const App = () => {
         <Card key={v.id} className="flex flex-col"><div className="p-5 flex-1"><h3 className="font-bold">{v.role}</h3><div className="text-sm text-blue-600 mb-2">{v.companyName}</div><div className="text-xs text-slate-500 space-y-1"><div>Salary: {v.salary}</div><div>Count: {v.count}</div></div></div>
           <div className="p-4 bg-slate-50 border-t flex gap-2"><Button className="flex-1 text-xs" onClick={() => setMatchingVacancyId(v.id)} disabled={v.status !== 'OPEN'}>Match</Button><Button variant="secondary" className="text-xs" onClick={() => toggleVacancyStatus(v.id)}>{v.status}</Button></div></Card>
       ))}</div>
-      {isVacancyModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">New Vacancy</h3>
-            <form onSubmit={handleAddVacancy}>
-              <div className="grid grid-cols-2 gap-4">
-                <Input name="companyName" label="Company" required />
-                <Input name="contactPerson" label="Contact Person" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input name="phone" label="Phone" />
-                <Input name="address" label="Address" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input name="role" label="Role" required />
-                <Input name="count" label="Count" type="number" defaultValue={1} />
-              </div>
-              <Input name="timing" label="Timing" placeholder="e.g. Full-time, 9am-5pm" />
-              <TextArea name="requiredSkills" label="Required Skills" placeholder="List key skills..." />
-              <Input name="salary" label="Salary" />
-              <TextArea name="remarks" label="Remarks" />
-              <div className="flex justify-end gap-2 mt-4">
-                <Button type="button" variant="secondary" onClick={() => setIsVacancyModalOpen(false)}>Cancel</Button>
-                <Button type="submit" isLoading={isSubmitting}>Post</Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
-      {matchingVacancyId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-4xl p-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between mb-4"><h3 className="font-bold">Matches</h3><XCircle className="cursor-pointer" onClick={() => setMatchingVacancyId(null)} /></div>
-            <div className="grid grid-cols-2 gap-4">{candidates.filter(c => c.status === 'ACTIVE').map(c => (<div key={c.id} className="p-3 border rounded flex justify-between"><div><div className="font-bold">{c.fullName}</div><div className="text-xs">{c.skills}</div></div><Button variant="secondary" className="text-xs" onClick={() => { setStudioCandidateId(c.id); setMatchingVacancyId(null); setActiveView('cv_studio'); }}>CV</Button></div>))}</div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 
@@ -1208,7 +1155,6 @@ const App = () => {
       <div className="flex justify-between"><h2 className="text-2xl font-bold">Placements</h2><Button onClick={() => setIsPlacementModalOpen(true)}><Plus size={16} /> New</Button></div>
       <Card><div className="overflow-x-auto w-full"><table className="w-full text-sm text-left min-w-[700px]"><thead className="bg-slate-50 border-b"><tr><th className="p-4">Candidate</th><th className="p-4">Company</th><th className="p-4">Commission</th><th className="p-4">Status</th><th className="p-4">Action</th></tr></thead>
         <tbody className="divide-y">{placements.map(p => (<tr key={p.id}><td className="p-4 font-medium">{getCandidateName(p.candidateId)}</td><td className="p-4 text-slate-600">{p.companyName}</td><td className="p-4 text-slate-600 font-mono">NPR {p.commissionAmount.toLocaleString()}</td><td className="p-4"><Badge color={p.paymentStatus === 'PAID' ? 'green' : 'yellow'}>{p.paymentStatus}</Badge></td><td className="p-4">{p.paymentStatus !== 'PAID' && <Button variant="secondary" className="text-xs" onClick={() => markCommissionPaid(p.id)}>Mark Paid</Button>}</td></tr>))}</tbody></table></div></Card>
-      {isPlacementModalOpen && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"><Card className="w-full max-w-lg p-6"><h3 className="text-xl font-bold mb-4">New Placement</h3><form onSubmit={handleAddPlacement}><Select name="candidateId" label="Candidate" options={candidates.map(c => ({ value: c.id, label: c.fullName }))} required /><Input name="companyName" label="Company" required /><Input name="salary" type="number" step="0.01" label="Salary" required /><Input name="joiningDate" type="date" label="Date" required /><div className="flex justify-end gap-2 mt-4"><Button type="button" variant="secondary" onClick={() => setIsPlacementModalOpen(false)}>Cancel</Button><Button type="submit" isLoading={isSubmitting}>Save</Button></div></form></Card></div>)}
     </div>
   );
 
@@ -1396,6 +1342,81 @@ const App = () => {
           {activeView === 'settings' && renderSettings()}
           {activeView === 'cv_studio' && renderCVStudio()}
         </div>
+
+        {/* Modals moved to bottom of content so they show regardless of activeView */}
+        {isCandidateModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold mb-4">Add New Candidate</h3>
+              <form onSubmit={handleAddCandidate}>
+                <div className="grid grid-cols-2 gap-4"><Input name="fullName" label="Name" required /><Input name="mobile" label="Mobile" required /></div>
+                <Input name="address" label="Address" required />
+                <TextArea name="skills" label="Skills" required />
+                <TextArea name="experience" label="Experience" required />
+                <TextArea name="education" label="Education" required />
+                <div className="mb-4"><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="isRegFeePaid" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" /> Reg Fee Paid?</label></div>
+                <div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button><Button type="submit" isLoading={isSubmitting}>Save</Button></div>
+              </form>
+            </Card>
+          </div>
+        )}
+
+        {isVacancyModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold mb-4">New Vacancy</h3>
+              <form onSubmit={handleAddVacancy}>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input name="companyName" label="Company" required />
+                  <Input name="contactPerson" label="Contact Person" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input name="phone" label="Phone" />
+                  <Input name="address" label="Address" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input name="role" label="Role" required />
+                  <Input name="count" label="Count" type="number" defaultValue={1} />
+                </div>
+                <Input name="timing" label="Timing" placeholder="e.g. Full-time, 9am-5pm" />
+                <TextArea name="requiredSkills" label="Required Skills" placeholder="List key skills..." />
+                <Input name="salary" label="Salary" />
+                <TextArea name="remarks" label="Remarks" />
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button type="button" variant="secondary" onClick={() => setIsVacancyModalOpen(false)}>Cancel</Button>
+                  <Button type="submit" isLoading={isSubmitting}>Post</Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+        )}
+
+        {isPlacementModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-lg p-6">
+              <h3 className="text-xl font-bold mb-4">New Placement</h3>
+              <form onSubmit={handleAddPlacement}>
+                <Select name="candidateId" label="Candidate" options={candidates.map(c => ({ value: c.id, label: c.fullName }))} required />
+                <Input name="companyName" label="Company" required />
+                <Input name="salary" type="number" step="0.01" label="Salary" required />
+                <Input name="joiningDate" type="date" label="Date" required />
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button type="button" variant="secondary" onClick={() => setIsPlacementModalOpen(false)}>Cancel</Button>
+                  <Button type="submit" isLoading={isSubmitting}>Save</Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+        )}
+
+        {matchingVacancyId && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-4xl p-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between mb-4"><h3 className="font-bold">Matches</h3><XCircle className="cursor-pointer" onClick={() => setMatchingVacancyId(null)} /></div>
+              <div className="grid grid-cols-2 gap-4">{candidates.filter(c => c.status === 'ACTIVE').map(c => (<div key={c.id} className="p-3 border rounded flex justify-between"><div><div className="font-bold">{c.fullName}</div><div className="text-xs">{c.skills}</div></div><Button variant="secondary" className="text-xs" onClick={() => { setStudioCandidateId(c.id); setMatchingVacancyId(null); setActiveView('cv_studio'); }}>CV</Button></div>))}</div>
+            </Card>
+          </div>
+        )}
       </main>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
