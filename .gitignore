@@ -11,7 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
-.env
+# .env (removed from ignore as per user request to push key)
+#!.env
 .env.*
 !.env.example
 
