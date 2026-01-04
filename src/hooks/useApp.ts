@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import Groq from "groq-sdk";
 import {
@@ -388,7 +388,7 @@ export const useApp = () => {
         if (!candidate) return;
         setGeneratingId(candidateId);
         try {
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "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";
             if (!apiKey) {
                 showToast("Missing Groq API Key in .env", "error");
                 return;
@@ -449,7 +449,7 @@ export const useApp = () => {
     const generateCVContentWithAI = async () => {
         setIsAiGenerating(true);
         try {
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "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";
             if (!apiKey) {
                 showToast("Missing Groq API Key in .env", "error");
                 return;
