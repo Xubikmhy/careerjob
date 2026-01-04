@@ -388,7 +388,7 @@ export const useApp = () => {
         if (!candidate) return;
         setGeneratingId(candidateId);
         try {
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "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";
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
             if (!apiKey) {
                 showToast("Missing Groq API Key in .env", "error");
                 return;
@@ -449,7 +449,7 @@ export const useApp = () => {
     const generateCVContentWithAI = async () => {
         setIsAiGenerating(true);
         try {
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "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";
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
             if (!apiKey) {
                 showToast("Missing Groq API Key in .env", "error");
                 return;

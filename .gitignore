@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 # .env (removed from ignore as per user request to push key)
-#!.env
+!.env
 .env.*
 !.env.example
 
