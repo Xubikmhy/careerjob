@@ -1,4 +1,6 @@
 import React from 'react';
+import { createRoot } from 'react-dom/client';
+console.log("Entry Point index.tsx running");
 import { useApp } from './src/hooks/useApp';
 import Toast from './src/components/ui/Toast';
 import { Sidebar, MobileHeader } from './src/components/features/Layout';
@@ -197,5 +199,11 @@ const App = () => {
     </div>
   );
 };
+
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
 
 export default App;
