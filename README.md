@@ -1,20 +1,93 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 💼 Career Job Solution
 
-# Run and deploy your AI Studio app
+A modern, AI-powered recruitment management system built with React, Supabase, and OpenRouter AI.
 
-This contains everything you need to run your app locally.
+## ✨ Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1fCN8LzVX4Q0OX3sJCKyGhe3q5halDBLt
+- 📊 **Dashboard**: Real-time statistics and insights
+- 👥 **Candidate Management**: Track and manage job seekers
+- 💼 **Vacancy Management**: Post and manage job openings
+- 🎯 **Placement Tracking**: Monitor successful placements and commissions
+- 📄 **AI-Powered CV Studio**: Generate professional CVs with AI assistance
+- 🤖 **AI Enhancement**: Automatically improve candidate profiles using OpenRouter AI
+- ⚙️ **Settings**: Customize agency details and commission rates
 
-## Run Locally
+## 🚀 Quick Start
 
-**Prerequisites:**  Node.js
+### Prerequisites
 
+- Node.js 18 or higher
+- Supabase account (free tier available)
+- OpenRouter API key (free tier available)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd careerjob
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up Supabase**
+   - Create a project at [supabase.com](https://supabase.com)
+   - Run the `schema.sql` file in your Supabase SQL Editor
+   - Copy your project URL and anon key from Project Settings > API
+
+4. **Configure environment variables**
+   - Copy `.env.example` to `.env`
+   - Fill in your credentials:
+   ```bash
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_anon_key
+   VITE_OPENROUTER_API_KEY=your_openrouter_api_key
+   ```
+
+5. **Start development server**
+   ```bash
+   npm run dev
+   ```
+   
+   Open [http://localhost:3000](http://localhost:3000)
+
+## 📦 Tech Stack
+
+- **Frontend**: React 19 + TypeScript
+- **Build Tool**: Vite 6
+- **Styling**: TailwindCSS
+- **Database**: Supabase (PostgreSQL)
+- **AI**: OpenRouter API (Access to generic, llama, etc.)
+- **Icons**: Lucide React
+
+## 🌐 Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions for:
+- 🟢 Vercel
+- 🔵 Netlify
+- 🖥️ Self-hosting
+
+## 📚 Documentation
+
+- `schema.sql` - Database schema for Supabase
+- `DEPLOYMENT.md` - Complete deployment guide
+- `.env.example` - Environment variables template
+
+## 🔧 Development
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+```
+
+## 📝 License
+
+MIT
+
+## 🤝 Contributing
+
+Contributions welcome! Please open an issue or submit a pull request.

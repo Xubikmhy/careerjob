@@ -1,7 +1,9 @@
 import { EducationLevel, AppSettings } from '../types';
 
-export const DEFAULT_SUPABASE_URL = "https://ehzjqyprwnklavufqkbs.supabase.co";
-export const DEFAULT_SUPABASE_KEY = "sb_publishable_6yXjiaHvbQWBABMqQNkg1g_qSkjZS8q";
+// Supabase credentials should be provided via environment variables (.env file)
+// or through the Settings UI. No default credentials for security.
+export const DEFAULT_SUPABASE_URL = "";
+export const DEFAULT_SUPABASE_KEY = "";
 
 export const INITIAL_SETTINGS: AppSettings = {
     agencyName: "Career Job Solution",

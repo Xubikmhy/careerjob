@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import Groq from "groq-sdk";
 import {
     Candidate, Vacancy, Placement, AppSettings,
     CandidateStatus, VacancyStatus, PaymentStatus, CVFormState
@@ -45,6 +44,37 @@ export const useApp = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month'>('month');
     const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const searchResults = useMemo(() => {
+        if (!searchQuery.trim()) return { candidates: [], vacancies: [], placements: [] };
+
+        const lowerQuery = searchQuery.toLowerCase();
+
+        return {
+            candidates: candidates.filter(c =>
+                c.fullName.toLowerCase().includes(lowerQuery) ||
+                c.skills.toLowerCase().includes(lowerQuery) ||
+                c.mobile.includes(lowerQuery) ||
+                (c.status && c.status.toLowerCase().includes(lowerQuery))
+            ),
+            vacancies: vacancies.filter(v =>
+                v.role.toLowerCase().includes(lowerQuery) ||
+                v.companyName.toLowerCase().includes(lowerQuery) ||
+                v.requiredSkills.toLowerCase().includes(lowerQuery)
+            ),
+            placements: placements.filter(p =>
+                p.candidateId.toLowerCase().includes(lowerQuery) || // Ideally map to name, but ID search is useful
+                p.companyName.toLowerCase().includes(lowerQuery) ||
+                p.jobRole.toLowerCase().includes(lowerQuery)
+                // Note: We can't easily search candidate Name here unless we join, 
+                // but global search is usually separate sections.
+                // We'll rely on candidates section for name search.
+            )
+        };
+    }, [searchQuery, candidates, vacancies, placements]);
 
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => setToast({ message, type }), []);
 
@@ -388,12 +418,12 @@ export const useApp = () => {
         if (!candidate) return;
         setGeneratingId(candidateId);
         try {
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
             if (!apiKey) {
-                showToast("Missing Groq API Key in .env", "error");
+                showToast("Missing OpenRouter API Key in .env", "error");
                 return;
             }
-            const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+
             const prompt = `
                 You are a world-class executive recruiter and career coach. 
                 Rewrite the following candidate profile to be extremely professional, impactful, and tailored for high-end job opportunities.
@@ -416,13 +446,31 @@ export const useApp = () => {
                 }
             `;
 
-            const result = await groq.chat.completions.create({
-                messages: [{ role: "user", content: prompt }],
-                model: "llama-3.3-70b-versatile",
-                response_format: { type: "json_object" }
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.origin, // Required by OpenRouter
+                    "X-Title": "Career Job Solution"
+                },
+                body: JSON.stringify({
+                    "model": "meta-llama/llama-3.3-70b-instruct",
+                    "messages": [
+                        { "role": "user", "content": prompt }
+                    ],
+                    "response_format": { "type": "json_object" }
+                })
             });
 
-            const text = result.choices[0]?.message?.content;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "OpenRouter API request failed");
+            }
+
+            const data = await response.json();
+            const text = data.choices?.[0]?.message?.content;
+
             if (text) {
                 const enhanced = JSON.parse(text);
                 if (supabase) {
@@ -435,12 +483,12 @@ export const useApp = () => {
                         isAiEnhanced: true,
                         skills: enhanced.skills
                     } : c));
-                    showToast("Profile Enhanced with Groq!");
+                    showToast("Profile Enhanced with OpenRouter AI!");
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            showToast("Groq AI Error", "error");
+            showToast(`AI Error: ${e.message}`, "error");
         } finally {
             setGeneratingId(null);
         }
@@ -449,12 +497,11 @@ export const useApp = () => {
     const generateCVContentWithAI = async () => {
         setIsAiGenerating(true);
         try {
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
             if (!apiKey) {
-                showToast("Missing Groq API Key in .env", "error");
+                showToast("Missing OpenRouter API Key in .env", "error");
                 return;
             }
-            const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
 
             const prompt = `
                 You are a professional CV writer. Create an exceptional, modern, and professional CV based on the following data:
@@ -483,24 +530,42 @@ export const useApp = () => {
                 }
             `;
 
-            const result = await groq.chat.completions.create({
-                messages: [{ role: "user", content: prompt }],
-                model: "llama-3.3-70b-versatile",
-                response_format: { type: "json_object" }
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.origin,
+                    "X-Title": "Career Job Solution"
+                },
+                body: JSON.stringify({
+                    "model": "meta-llama/llama-3.3-70b-instruct",
+                    "messages": [
+                        { "role": "user", "content": prompt }
+                    ],
+                    "response_format": { "type": "json_object" }
+                })
             });
 
-            const text = result.choices[0]?.message?.content;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "OpenRouter API request failed");
+            }
+
+            const data = await response.json();
+            const text = data.choices?.[0]?.message?.content;
+
             if (text) {
                 const res = JSON.parse(text);
                 if (res.skills && typeof res.skills !== 'string') {
                     res.skills = Array.isArray(res.skills) ? res.skills.join(', ') : JSON.stringify(res.skills);
                 }
                 setCvForm(prev => ({ ...prev, ...res }));
-                showToast("CV Polished by Groq!");
+                showToast("CV Polished by OpenRouter AI!");
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            showToast("Groq AI Error", "error");
+            showToast(`AI Error: ${e.message}`, "error");
         } finally {
             setIsAiGenerating(false);
         }
@@ -570,6 +635,7 @@ export const useApp = () => {
         generateCVContentWithAI,
         addEducation, removeEducation, updateEducation,
         addExperience, removeExperience, updateExperience,
-        connectSupabase, disconnectSupabase
+        connectSupabase, disconnectSupabase,
+        searchQuery, setSearchQuery, searchResults
     };
 };

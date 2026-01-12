@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 console.log("Entry Point index.tsx running");
 import { useApp } from './src/hooks/useApp';
 import Toast from './src/components/ui/Toast';
-import { Sidebar, MobileHeader } from './src/components/features/Layout';
+import { Sidebar, MobileHeader, Header } from './src/components/features/Layout';
+import SearchResults from './src/components/features/SearchResults';
 import Dashboard from './src/components/features/Dashboard';
 import CandidateList from './src/components/features/CandidateList';
 import VacancyList from './src/components/features/VacancyList';
@@ -49,7 +50,8 @@ const App = () => {
     generateCVContentWithAI,
     addEducation, removeEducation, updateEducation,
     addExperience, removeExperience, updateExperience,
-    connectSupabase, disconnectSupabase
+    connectSupabase, disconnectSupabase,
+    searchQuery, setSearchQuery, searchResults
   } = useApp();
 
   const renderContent = () => {
@@ -145,15 +147,32 @@ const App = () => {
         supabaseConnected={!!supabase}
       />
 
-      <main className="flex-1 flex flex-col relative h-full">
+      <main className="flex-1 flex flex-col relative h-full overflow-hidden">
+        {/* Mobile Header (Hidden on Desktop) */}
         {!showPreview && <MobileHeader setIsSidebarOpen={setIsSidebarOpen} settings={settings} />}
 
-        <div className={`flex-1 p-4 lg:p-8 ${showPreview ? 'p-0' : ''}`}>
+        {/* Desktop Header (Hidden on Mobile) */}
+        {!showPreview && <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} activeView={activeView} />}
+
+        <div className={`flex-1 p-4 lg:p-8 overflow-y-auto ${showPreview ? 'p-0' : ''}`}>
           {isLoading ? (
             <div className="flex h-64 items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : renderContent()}
+          ) : (
+            // If there is a search query, Overlay the search results OR switch view? 
+            // Better to switch view or just render conditionally.
+            searchQuery ? (
+              <SearchResults
+                query={searchQuery}
+                results={searchResults}
+                onNavigate={(view) => {
+                  setActiveView(view);
+                  setSearchQuery(""); // Clear search on navigation
+                }}
+              />
+            ) : renderContent()
+          )}
         </div>
 
         {/* Modals */}
