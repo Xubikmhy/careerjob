@@ -77,6 +77,8 @@ const CVStudio: React.FC<CVStudioProps> = ({
                             margin: 0;
                             padding: 20mm !important;
                             box-shadow: none !important;
+                            print-color-adjust: exact;
+                            -webkit-print-color-adjust: exact;
                         }
                         .no-print {
                             display: none !important;
@@ -84,7 +86,7 @@ const CVStudio: React.FC<CVStudioProps> = ({
                     }
                 ` }} />
                 <div className="flex-1 overflow-y-auto p-8 flex justify-center">
-                    <div id="cv-print-area" className="bg-white shadow-2xl w-[210mm] min-h-[297mm] p-[20mm] relative text-black" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+                    <div id="cv-print-area" className="bg-white shadow-2xl w-[210mm] min-h-[297mm] p-[20mm] relative text-slate-900 font-sans">
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <img src={settings.logoUrl} className="w-[400px] opacity-[0.08] grayscale" alt="Watermark" />
                         </div>

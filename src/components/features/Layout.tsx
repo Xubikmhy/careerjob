@@ -12,10 +12,13 @@ interface SidebarProps {
     setActiveView: (view: string) => void;
     settings: AppSettings;
     supabaseConnected: boolean;
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-    isSidebarOpen, setIsSidebarOpen, activeView, setActiveView, settings, supabaseConnected
+    isSidebarOpen, setIsSidebarOpen, activeView, setActiveView, settings, supabaseConnected,
+    searchQuery, setSearchQuery
 }) => (
     <>
         {isSidebarOpen && (
@@ -40,6 +43,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <img src={settings.logoUrl} className="h-12 object-contain mb-2" alt="Logo" />
                 <h1 className="font-bold text-blue-700 text-center">{settings.agencyName}</h1>
             </div>
+
+            <div className="p-4 pb-0 lg:hidden">
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-full px-3 py-2 text-sm border rounded bg-slate-50 focus:outline-none focus:border-blue-500"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
             <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
                 {[
                     { id: 'dashboard', icon: <LayoutDashboard size={18} /> },

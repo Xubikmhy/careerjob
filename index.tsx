@@ -145,6 +145,8 @@ const App = () => {
         setActiveView={setActiveView}
         settings={settings}
         supabaseConnected={!!supabase}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
 
       <main className="flex-1 flex flex-col relative h-full overflow-hidden">

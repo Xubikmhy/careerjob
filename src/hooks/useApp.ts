@@ -126,6 +126,30 @@ export const useApp = () => {
         }
     };
 
+    // Real-time Subscription for Finances/Placements
+    useEffect(() => {
+        if (!supabase) return;
+
+        const channel = supabase.channel('public:placements')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'placements' }, (payload) => {
+                console.log('Real-time update received:', payload);
+                // Optimally we'd just update state, but fetching fresh data is safer for relations
+                // We'll re-fetch just Placements to be efficient
+                supabase.from('placements').select('*').order('joining_date', { ascending: false })
+                    .then(({ data }) => {
+                        if (data) {
+                            setPlacements(data.map(transformers.placement.fromDB));
+                            showToast('Finances updated in real-time!', 'success');
+                        }
+                    });
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase]);
+
     useEffect(() => {
         fetchData();
     }, [supabase]);
