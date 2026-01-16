@@ -4,7 +4,7 @@ import {
     Candidate, Vacancy, Placement, AppSettings,
     CandidateStatus, VacancyStatus, CVFormState
 } from '../types';
-import { INITIAL_SETTINGS, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY } from '../constants';
+import { INITIAL_SETTINGS, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY, OPENROUTER_API_KEY } from '../constants';
 import { getSupabaseClient, transformers } from '../services/supabase';
 
 export const useApp = () => {
@@ -419,7 +419,7 @@ export const useApp = () => {
         if (!candidate) return;
         setGeneratingId(candidateId);
         try {
-            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || OPENROUTER_API_KEY || "";
             if (!apiKey) {
                 showToast("Missing OpenRouter API Key in .env", "error");
                 return;
@@ -498,7 +498,7 @@ export const useApp = () => {
     const generateCVContentWithAI = async () => {
         setIsAiGenerating(true);
         try {
-            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || OPENROUTER_API_KEY || "";
             if (!apiKey) {
                 showToast("Missing OpenRouter API Key in .env", "error");
                 return;

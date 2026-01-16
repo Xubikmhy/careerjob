@@ -5,6 +5,9 @@ import { EducationLevel, AppSettings } from '../types';
 export const DEFAULT_SUPABASE_URL = "";
 export const DEFAULT_SUPABASE_KEY = "";
 
+// Fallback Key as per user request
+export const OPENROUTER_API_KEY = "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";
+
 export const INITIAL_SETTINGS: AppSettings = {
     agencyName: "Career Job Solution",
     logoUrl: "https://cdn-icons-png.flaticon.com/512/3135/3135768.png",
