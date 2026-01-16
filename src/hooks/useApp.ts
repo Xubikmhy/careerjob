@@ -419,7 +419,8 @@ export const useApp = () => {
         if (!candidate) return;
         setGeneratingId(candidateId);
         try {
-            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || OPENROUTER_API_KEY || "";
+            const apiKey = (import.meta.env.VITE_OPENROUTER_API_KEY || OPENROUTER_API_KEY || "").trim();
+            console.log("AI Request Key:", apiKey.substring(0, 8) + "...");
             if (!apiKey) {
                 showToast("Missing OpenRouter API Key in .env", "error");
                 return;
@@ -456,7 +457,7 @@ export const useApp = () => {
                     "X-Title": "Career Job Solution"
                 },
                 body: JSON.stringify({
-                    "model": "meta-llama/llama-3.3-70b-instruct",
+                    "model": "google/gemini-2.0-flash-exp:free",
                     "messages": [
                         { "role": "user", "content": prompt }
                     ],
@@ -498,7 +499,8 @@ export const useApp = () => {
     const generateCVContentWithAI = async () => {
         setIsAiGenerating(true);
         try {
-            const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || OPENROUTER_API_KEY || "";
+            const apiKey = (import.meta.env.VITE_OPENROUTER_API_KEY || OPENROUTER_API_KEY || "").trim();
+            console.log("AI Request Key:", apiKey.substring(0, 8) + "...");
             if (!apiKey) {
                 showToast("Missing OpenRouter API Key in .env", "error");
                 return;
