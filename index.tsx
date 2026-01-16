@@ -38,14 +38,12 @@ const App = () => {
     toast, setToast,
     fetchData,
     getCandidateName,
-    upcomingCommissions,
     dashboardStats,
     handleUpdateSettings,
     handleAddCandidate,
     handleAddVacancy,
     toggleVacancyStatus,
     handleAddPlacement,
-    markCommissionPaid,
     saveCvData,
     generateCVContentWithAI,
     addEducation, removeEducation, updateEducation,
@@ -69,7 +67,6 @@ const App = () => {
             setIsCandidateModalOpen={setIsCandidateModalOpen}
             setActiveView={setActiveView}
             getCandidateName={getCandidateName}
-            upcomingCommissions={upcomingCommissions}
           />
         );
       case 'candidates':
@@ -97,7 +94,6 @@ const App = () => {
             placements={placements}
             setIsPlacementModalOpen={setIsPlacementModalOpen}
             getCandidateName={getCandidateName}
-            markCommissionPaid={markCommissionPaid}
           />
         );
       case 'settings':

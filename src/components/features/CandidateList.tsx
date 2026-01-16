@@ -32,7 +32,6 @@ const CandidateList: React.FC<CandidateListProps> = ({
                             <th className="p-4">Name</th>
                             <th className="p-4">Mobile</th>
                             <th className="p-4">Skills</th>
-                            <th className="p-4">Fee</th>
                             <th className="p-4">Action</th>
                         </tr>
                     </thead>
@@ -42,11 +41,6 @@ const CandidateList: React.FC<CandidateListProps> = ({
                                 <td className="p-4 font-medium">{c.fullName}</td>
                                 <td className="p-4 text-slate-600">{c.mobile}</td>
                                 <td className="p-4 max-w-xs truncate text-slate-600">{c.skills}</td>
-                                <td className="p-4">
-                                    <Badge color={c.isRegFeePaid ? 'green' : 'red'}>
-                                        {c.isRegFeePaid ? 'Paid' : 'Unpaid'}
-                                    </Badge>
-                                </td>
                                 <td className="p-4 whitespace-nowrap">
                                     <Button
                                         variant="secondary"

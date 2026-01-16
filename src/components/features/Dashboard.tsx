@@ -18,22 +18,14 @@ interface DashboardProps {
     setIsCandidateModalOpen: (open: boolean) => void;
     setActiveView: (view: string) => void;
     getCandidateName: (id: string) => string;
-    upcomingCommissions: any[];
+    upcomingCommissions: any[]; // Deprecated, but keeping for prop compatibility if needed (will remove usage)
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
     candidates, vacancies, placements, dashboardStats,
     timeFilter, setTimeFilter, fetchData, setIsCandidateModalOpen,
-    setActiveView, getCandidateName, upcomingCommissions
+    setActiveView, getCandidateName
 }) => {
-    const totalRevenue = placements
-        .filter(p => p.paymentStatus === 'PAID')
-        .reduce((acc, p) => acc + p.commissionAmount, 0);
-
-    const pendingRevenue = placements
-        .filter(p => p.paymentStatus === 'PENDING')
-        .reduce((acc, p) => acc + p.commissionAmount, 0);
-
     const placementSuccessRate = candidates.length > 0
         ? Math.round((candidates.filter(c => c.status === 'PLACED').length / candidates.length) * 100)
         : 0;
@@ -59,7 +51,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
                 <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-blue-100">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-blue-500 text-white rounded-xl shadow-sm"><Users size={24} /></div>
@@ -84,30 +76,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                         Across <span className="font-bold">{new Set(vacancies.map(v => v.companyName)).size}</span> companies
                     </div>
                 </Card>
-                <Card className="p-4 bg-gradient-to-br from-green-50 to-white border-green-100">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-green-500 text-white rounded-xl shadow-sm"><DollarSign size={24} /></div>
-                        <div>
-                            <div className="text-xs font-semibold text-green-600 uppercase tracking-wider">Total Revenue</div>
-                            <div className="text-2xl font-bold text-slate-900">NPR {totalRevenue.toLocaleString()}</div>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                        From <span className="font-bold">{placements.filter(p => p.paymentStatus === 'PAID').length}</span> collections
-                    </div>
-                </Card>
-                <Card className="p-4 bg-gradient-to-br from-yellow-50 to-white border-yellow-100">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-yellow-500 text-white rounded-xl shadow-sm"><Clock size={24} /></div>
-                        <div>
-                            <div className="text-xs font-semibold text-yellow-600 uppercase tracking-wider">Pending</div>
-                            <div className="text-2xl font-bold text-slate-900">NPR {pendingRevenue.toLocaleString()}</div>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                        <span className="text-yellow-600 font-bold">{upcomingCommissions.length}</span> reaching due date soon
-                    </div>
-                </Card>
             </div>
 
             {/* Quick Actions & Activity */}
@@ -129,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div className="grid grid-cols-1 md:grid-cols-1 gap-8 items-center">
                             <div className="space-y-6">
                                 {[
                                     { label: 'Talent Acquisition', value: dashboardStats.newCandidates, total: candidates.length, color: 'blue' },
@@ -150,22 +118,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     </div>
                                 ))}
                             </div>
-
-                            <div className="flex flex-col items-center justify-center p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden group">
-                                <div className="absolute top-[-20px] right-[-20px] p-10 bg-blue-200/20 rounded-full group-hover:scale-110 transition-transform duration-500" />
-                                <div className="relative z-10 text-center">
-                                    <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Period Revenue</div>
-                                    <div className="text-3xl font-black text-blue-900 mb-2">NPR {dashboardStats.revenue.toLocaleString()}</div>
-                                    <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-blue-600 bg-white px-3 py-1 rounded-full shadow-sm">
-                                        <Sparkles size={12} />
-                                        Target Optimized
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </Card>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6">
                         <Card className="p-6 flex flex-col">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-semibold flex items-center gap-2"><Briefcase className="text-blue-500" size={20} /> Latest Vacancies</h3>
@@ -182,39 +138,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     </div>
                                 ))}
                                 {vacancies.length === 0 && <div className="text-center py-8 text-slate-400 text-sm">No vacancies posted yet</div>}
-                            </div>
-                        </Card>
-
-                        <Card className="p-6 flex flex-col">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold flex items-center gap-2"><AlertCircle className="text-yellow-500" size={20} /> Due Payments</h3>
-                                <Button variant="secondary" className="text-xs h-8" onClick={() => setActiveView('placements')}>History</Button>
-                            </div>
-                            <div className="overflow-x-auto flex-1">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase border-b font-bold tracking-wider">
-                                        <tr><th className="py-2 px-3">Company</th><th className="py-2 px-3 text-right">Amount</th><th className="py-2 px-3 text-right">Due Date</th></tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {upcomingCommissions.slice(0, 5).map(p => (
-                                            <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="py-3 px-3">
-                                                    <div className="font-semibold text-slate-700">{p.companyName}</div>
-                                                    <div className="text-[10px] text-slate-400">{getCandidateName(p.candidateId)}</div>
-                                                </td>
-                                                <td className="py-3 px-3 text-right font-mono text-slate-600">NPR {p.commissionAmount.toLocaleString()}</td>
-                                                <td className="py-3 px-3 text-right text-xs">
-                                                    <span className={new Date(p.commissionDueDate) < new Date() ? 'text-red-500 font-bold' : 'text-slate-500'}>
-                                                        {new Date(p.commissionDueDate).toLocaleDateString()}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {upcomingCommissions.length === 0 && (
-                                            <tr><td colSpan={3} className="text-center py-8 text-slate-400 text-sm">No pending payments</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
                             </div>
                         </Card>
                     </div>

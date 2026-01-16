@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import {
     Candidate, Vacancy, Placement, AppSettings,
-    CandidateStatus, VacancyStatus, PaymentStatus, CVFormState
+    CandidateStatus, VacancyStatus, CVFormState
 } from '../types';
 import { INITIAL_SETTINGS, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY } from '../constants';
 import { getSupabaseClient, transformers } from '../services/supabase';
@@ -157,14 +157,6 @@ export const useApp = () => {
     // Derived Data
     const getCandidateName = useCallback((id: string) => candidates.find(c => c.id === id)?.fullName || 'Unknown', [candidates]);
 
-    const upcomingCommissions = useMemo(() => {
-        const today = new Date();
-        const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-        return placements.filter(p => {
-            const dueDate = new Date(p.commissionDueDate);
-            return p.paymentStatus === 'PENDING' && (dueDate <= nextWeek);
-        }).sort((a, b) => new Date(a.commissionDueDate).getTime() - new Date(b.commissionDueDate).getTime());
-    }, [placements]);
 
     const dashboardStats = useMemo(() => {
         const filterByTime = (dateStr: string) => {
@@ -187,8 +179,7 @@ export const useApp = () => {
         return {
             newCandidates: candidates.filter(c => filterByTime(c.createdAt)).length,
             newVacancies: vacancies.filter(v => filterByTime(v.createdAt)).length,
-            placementsCount: placements.filter(p => filterByTime(p.joiningDate)).length,
-            revenue: placements.filter(p => filterByTime(p.joiningDate)).reduce((acc, p) => acc + p.commissionAmount, 0)
+            placementsCount: placements.filter(p => filterByTime(p.joiningDate)).length
         };
     }, [candidates, vacancies, placements, timeFilter]);
 
@@ -259,7 +250,7 @@ export const useApp = () => {
             skills: formData.get('skills') as string,
             education: formData.get('education') as string,
             experience: formData.get('experience') as string,
-            isRegFeePaid: formData.get('isRegFeePaid') === 'on',
+
             status: 'ACTIVE' as CandidateStatus,
             cvData: null,
             isAiEnhanced: false
@@ -339,19 +330,12 @@ export const useApp = () => {
         }
         setIsSubmitting(true);
         const joiningDate = new Date(formData.get('joiningDate') as string);
-        const commissionAmount = salary * (settings.commissionPercent / 100);
-        const dueDate = new Date(joiningDate);
-        dueDate.setDate(dueDate.getDate() + 30);
-
         const rawPlacement = {
             candidateId: formData.get('candidateId') as string,
             companyName: formData.get('companyName') as string,
             jobRole: formData.get('jobRole') as string,
             salary: salary,
-            joiningDate: joiningDate.toISOString(),
-            commissionAmount: commissionAmount,
-            commissionDueDate: dueDate.toISOString(),
-            paymentStatus: 'PENDING' as PaymentStatus
+            joiningDate: joiningDate.toISOString()
         };
 
         try {
@@ -372,13 +356,6 @@ export const useApp = () => {
         }
     };
 
-    const markCommissionPaid = async (id: string) => {
-        if (!supabase) return;
-        const { error } = await supabase.from('placements').update({ payment_status: 'PAID' }).eq('id', id);
-        if (!error) {
-            setPlacements(placements.map(p => p.id === id ? { ...p, paymentStatus: 'PAID' } : p));
-        }
-    };
 
     const saveCvData = async () => {
         if (!cvForm.fullName || !cvForm.mobile) {
@@ -413,7 +390,7 @@ export const useApp = () => {
                     skills: cvForm.skills,
                     experience: cvForm.experiences.map(e => `${e.role} at ${e.company}`).join(', ') || 'Fresher',
                     education: cvForm.educations.map(e => e.degree).join(', ') || 'Not Specified',
-                    isRegFeePaid: false,
+
                     status: 'ACTIVE' as CandidateStatus,
                     cvData: cvForm,
                     isAiEnhanced: false
@@ -646,14 +623,12 @@ export const useApp = () => {
         toast, setToast,
         fetchData,
         getCandidateName,
-        upcomingCommissions,
         dashboardStats,
         handleUpdateSettings,
         handleAddCandidate,
         handleAddVacancy,
         toggleVacancyStatus,
         handleAddPlacement,
-        markCommissionPaid,
         saveCvData,
         handleAIEnhance,
         generateCVContentWithAI,

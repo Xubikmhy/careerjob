@@ -31,12 +31,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                     value={settings.logoUrl}
                     onChange={(e: any) => setSettings({ ...settings, logoUrl: e.target.value })}
                 />
-                <Input
-                    label="Commission %"
-                    type="number"
-                    value={settings.commissionPercent}
-                    onChange={(e: any) => setSettings({ ...settings, commissionPercent: parseFloat(e.target.value) })}
-                />
                 <Button type="submit" className="w-full mt-4" isLoading={isSubmitting}>
                     Save Settings
                 </Button>

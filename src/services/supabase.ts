@@ -36,7 +36,6 @@ export const transformers = {
             skills: typeof data.skills === 'string' ? data.skills : JSON.stringify(data.skills || ''),
             experience: typeof data.experience === 'string' ? data.experience : JSON.stringify(data.experience || ''),
             education: typeof data.education === 'string' ? data.education : JSON.stringify(data.education || ''),
-            isRegFeePaid: data.is_reg_fee_paid,
             status: data.status,
             createdAt: data.created_at,
             cvData: data.cv_data,
@@ -49,7 +48,6 @@ export const transformers = {
             skills: data.skills,
             experience: data.experience,
             education: data.education,
-            is_reg_fee_paid: data.isRegFeePaid,
             status: data.status,
             cv_data: data.cvData,
             is_ai_enhanced: data.isAiEnhanced
@@ -92,34 +90,26 @@ export const transformers = {
             companyName: data.company_name,
             jobRole: data.job_role,
             salary: data.salary,
-            joiningDate: data.joining_date,
-            commissionAmount: data.commission_amount,
-            commissionDueDate: data.commission_due_date,
-            paymentStatus: data.payment_status
+            joiningDate: data.joining_date
         }),
         toDB: (data: Partial<Placement>) => ({
             candidate_id: data.candidateId,
             company_name: data.companyName,
             job_role: data.jobRole,
             salary: data.salary,
-            joining_date: data.joiningDate,
-            commission_amount: data.commissionAmount,
-            commission_due_date: data.commissionDueDate,
-            payment_status: data.paymentStatus
+            joining_date: data.joiningDate
         })
     },
     settings: {
         fromDB: (data: any): AppSettings => ({
             agencyName: data.agency_name || "Career Job Solution",
             logoUrl: data.logo_url || "https://cdn-icons-png.flaticon.com/512/3135/3135768.png",
-            commissionPercent: data.commission_percent || 30,
             address: data.address || "Pokhara, Nepal",
             contact: data.contact || ""
         }),
         toDB: (data: AppSettings) => ({
             agency_name: data.agencyName,
             logo_url: data.logoUrl,
-            commission_percent: data.commissionPercent,
             address: data.address,
             contact: data.contact
         })

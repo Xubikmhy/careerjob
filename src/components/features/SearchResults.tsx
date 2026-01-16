@@ -130,9 +130,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, results, onNavigat
                                         <p className="text-xs text-slate-500">Salary: {placement.salary.toLocaleString()}</p>
                                     </div>
                                 </div>
-                                <span className={`text-xs font-bold px-2 py-1 rounded ${placement.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                    {placement.paymentStatus}
-                                </span>
                             </div>
                         ))}
                     </div>

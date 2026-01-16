@@ -26,12 +26,6 @@ export const CandidateModal: React.FC<CandidateModalProps> = ({ onClose, onSubmi
                 <TextArea name="skills" label="Skills" required />
                 <TextArea name="experience" label="Experience" required />
                 <TextArea name="education" label="Education" required />
-                <div className="mb-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="isRegFeePaid" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
-                        Reg Fee Paid?
-                    </label>
-                </div>
                 <div className="flex justify-end gap-2">
                     <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                     <Button type="submit" isLoading={isSubmitting}>Save</Button>

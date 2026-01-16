@@ -8,7 +8,7 @@ export const DEFAULT_SUPABASE_KEY = "";
 export const INITIAL_SETTINGS: AppSettings = {
     agencyName: "Career Job Solution",
     logoUrl: "https://cdn-icons-png.flaticon.com/512/3135/3135768.png",
-    commissionPercent: 30,
+
     address: "Pokhara, Nepal",
     contact: "+977 9800000000"
 };

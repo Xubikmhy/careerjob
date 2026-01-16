@@ -1,11 +1,11 @@
 export type CandidateStatus = 'ACTIVE' | 'PLACED' | 'ARCHIVED';
-export type PaymentStatus = 'PENDING' | 'OVERDUE' | 'PAID';
+
 export type VacancyStatus = 'OPEN' | 'FILLED';
+
 
 export interface AppSettings {
   agencyName: string;
   logoUrl: string;
-  commissionPercent: number;
   address: string;
   contact: string;
 }
@@ -57,7 +57,7 @@ export interface Candidate {
   skills: string;
   experience: string;
   education: string;
-  isRegFeePaid: boolean;
+
   status: CandidateStatus;
   createdAt: string;
   isAiEnhanced?: boolean;
@@ -87,9 +87,6 @@ export interface Placement {
   jobRole: string;
   salary: number;
   joiningDate: string;
-  commissionAmount: number;
-  commissionDueDate: string;
-  paymentStatus: PaymentStatus;
 }
 
 // Extended form state

@@ -29,9 +29,8 @@ const PlacementList: React.FC<PlacementListProps> = ({
                         <tr>
                             <th className="p-4">Candidate</th>
                             <th className="p-4">Company</th>
-                            <th className="p-4">Commission</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4">Action</th>
+                            <th className="p-4">Salary</th>
+                            <th className="p-4">Joined Date</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -39,18 +38,9 @@ const PlacementList: React.FC<PlacementListProps> = ({
                             <tr key={p.id}>
                                 <td className="p-4 font-medium">{getCandidateName(p.candidateId)}</td>
                                 <td className="p-4 text-slate-600">{p.companyName}</td>
-                                <td className="p-4 text-slate-600 font-mono">NPR {p.commissionAmount.toLocaleString()}</td>
-                                <td className="p-4">
-                                    <Badge color={p.paymentStatus === 'PAID' ? 'green' : 'yellow'}>
-                                        {p.paymentStatus}
-                                    </Badge>
-                                </td>
-                                <td className="p-4">
-                                    {p.paymentStatus !== 'PAID' && (
-                                        <Button variant="secondary" className="text-xs" onClick={() => markCommissionPaid(p.id)}>
-                                            Mark Paid
-                                        </Button>
-                                    )}
+                                <td className="p-4 text-slate-600 font-mono">NPR {p.salary.toLocaleString()}</td>
+                                <td className="p-4 text-slate-600">
+                                    {new Date(p.joiningDate).toLocaleDateString()}
                                 </td>
                             </tr>
                         ))}
